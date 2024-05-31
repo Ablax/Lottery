@@ -77,4 +77,71 @@ contract RaffleTest is Test {
         vm.prank(PLAYER);
         raffle.enterRaffle{value: entranceFee}();
     }
+
+
+    //////////////////
+    // checkUpkeep //
+    /////////////////
+    function testCheckUpkeepReturnsFalseIfHasNoBalance() public {
+        vm.warp(block.timestamp + interval + 1);
+        vm.roll(block.number + 1);
+
+        (bool upkeepNeeded,) = raffle.checkUpkeep("");
+        assert(!upkeepNeeded);
+    }
+
+    function testCheckUpkeepReturnsFalseIfRaffleNotOpen() public {
+        vm.prank(PLAYER);
+        raffle.enterRaffle{value: entranceFee}();
+
+        vm.warp(block.timestamp + interval + 1);
+        vm.roll(block.number + 1);
+
+        raffle.performUpkeep("");
+
+        (bool upkeepNeeded,) = raffle.checkUpkeep("");
+        assert(!upkeepNeeded);
+    }
+
+    function testCheckUpKeepReturnsFalseIfEnoughTimeHasntPassed() public {
+        vm.prank(PLAYER);
+        raffle.enterRaffle{value: entranceFee}();
+
+        (bool upkeepNeeded,) = raffle.checkUpkeep("");
+        assert(!upkeepNeeded);
+    }
+
+    function testCheckUpkeepReturnsTrueWhenParametersAreGood() public {
+        vm.prank(PLAYER);
+        raffle.enterRaffle{value: entranceFee}();
+
+        vm.warp(block.timestamp + interval + 1);
+        vm.roll(block.number + 1);
+
+        (bool upkeepNeeded,) = raffle.checkUpkeep("");
+        assert(upkeepNeeded);
+    }
+
+
+    ///////////////////
+    // performUpkeep //
+    //////////////////
+    function testPerformUpkeepCanOnlyRunIfCheckUpkeepIsTrue() public {
+        vm.prank(PLAYER);
+        raffle.enterRaffle{value: entranceFee}();
+
+        vm.warp(block.timestamp + interval + 1);
+        vm.roll(block.number + 1);
+
+        raffle.performUpkeep("");
+    }
+
+    function testPerformUpkeepRevertsIfCheckUpkeepIsFalse() public {
+        uint256 balance = 0;
+        uint256 players = 0;
+        uint256 raffleState = 0;
+
+        vm.expectRevert(abi.encodeWithSelector(Raffle.Raffle__UpKeepNotNeeded.selector, balance, players, raffleState));
+        raffle.performUpkeep("");
+    }
 }
